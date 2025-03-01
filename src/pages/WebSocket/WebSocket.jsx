@@ -129,11 +129,25 @@ const WebSocketPage = () => {
             <span>Connected</span>
           </div>
         );
+      case 'CONNECTING':
+        return (
+          <div className="flex items-center text-blue-500 text-xs">
+            <FiDisc className="animate-pulse mr-1" />
+            <span>Connecting...</span>
+          </div>
+        );
       case 'DISCONNECTED':
         return (
           <div className="flex items-center text-gray-500 text-xs">
             <FiPower className="mr-1" />
             <span>Disconnected</span>
+          </div>
+        );
+      case 'CLOSING':
+        return (
+          <div className="flex items-center text-yellow-500 text-xs">
+            <FiPower className="mr-1" />
+            <span>Closing...</span>
           </div>
         );
       default:

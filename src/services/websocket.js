@@ -1,4 +1,7 @@
-import { io } from 'socket.io-client';
+/**
+ * WebSocket service using native browser WebSocket API
+ * Compatible with standard WebSocket servers including ixwebsocket
+ */
 
 // WebSocket connection instance
 let socket = null;
@@ -7,61 +10,81 @@ let socket = null;
 const listeners = new Map();
 
 /**
- * Initialize socket connection with the server
+ * Initialize WebSocket connection with the server
  */
 const initializeSocket = (url) => {
   if (socket) {
     return socket;
   }
 
-  socket = io(url, {
-    autoConnect: false,
-    reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-  });
+  try {
+    socket = new WebSocket(url);
 
-  // Set up default listeners
-  socket.on('connect', () => {
-    notifyListeners('connect', { id: socket.id });
-  });
+    // Set up event listeners
+    socket.onopen = () => {
+      notifyListeners('connect', { id: generateRandomId() });
+    };
 
-  socket.on('disconnect', (reason) => {
-    notifyListeners('disconnect', { reason });
-  });
+    socket.onclose = (event) => {
+      notifyListeners('disconnect', { 
+        reason: event.reason || 'Connection closed', 
+        code: event.code 
+      });
+    };
 
-  socket.on('error', (error) => {
-    notifyListeners('error', { error });
-  });
+    socket.onerror = (error) => {
+      notifyListeners('error', { error: 'WebSocket error occurred' });
+    };
 
-  socket.on('message', (data) => {
-    notifyListeners('message', data);
-  });
+    socket.onmessage = (event) => {
+      try {
+        // Try to parse as JSON first
+        const data = JSON.parse(event.data);
+        notifyListeners('message', data);
+      } catch (e) {
+        // If not JSON, send as string
+        notifyListeners('message', event.data);
+      }
+    };
 
-  return socket;
+    return socket;
+  } catch (error) {
+    console.error('WebSocket initialization error:', error);
+    return null;
+  }
+};
+
+/**
+ * Generate a random ID for the connection
+ */
+const generateRandomId = () => {
+  return `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
 /**
  * Connect to WebSocket server
  */
 const connect = (url) => {
-  if (!socket) {
+  try {
+    if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+      return true;
+    }
+    
     socket = initializeSocket(url);
+    return socket !== null;
+  } catch (error) {
+    console.error('WebSocket connect error:', error);
+    return false;
   }
-  
-  if (!socket.connected) {
-    socket.connect();
-  }
-  
-  return socket.connected;
 };
 
 /**
  * Disconnect from WebSocket server
  */
 const disconnect = () => {
-  if (socket && socket.connected) {
-    socket.disconnect();
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close(1000, "Disconnect requested by user");
+    socket = null;
     return true;
   }
   return false;
@@ -71,8 +94,12 @@ const disconnect = () => {
  * Send message to server
  */
 const sendMessage = (message) => {
-  if (socket && socket.connected) {
-    socket.emit('message', message);
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    const messageStr = typeof message === 'string' 
+      ? message 
+      : JSON.stringify(message);
+      
+    socket.send(messageStr);
     return true;
   }
   return false;
@@ -111,8 +138,19 @@ const notifyListeners = (event, data) => {
  */
 const getStatus = () => {
   if (!socket) return 'NOT_INITIALIZED';
-  if (socket.connected) return 'CONNECTED';
-  return 'DISCONNECTED';
+  
+  switch (socket.readyState) {
+    case WebSocket.CONNECTING:
+      return 'CONNECTING';
+    case WebSocket.OPEN:
+      return 'CONNECTED';
+    case WebSocket.CLOSING:
+      return 'CLOSING';
+    case WebSocket.CLOSED:
+      return 'DISCONNECTED';
+    default:
+      return 'UNKNOWN';
+  }
 };
 
 export default {
