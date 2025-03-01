@@ -4,6 +4,7 @@ import { AppProvider } from './contexts/AppContext';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import Home from './pages/Home/Home';
+import WebSocketPage from './pages/WebSocket/WebSocket';
 import LoadingPage from './pages/Loading/Loading';
 import { useApp } from './contexts/AppContext';
 
@@ -39,6 +40,11 @@ const App = () => {
           <Route path="/" element={
             <Layout>
               <Home />
+            </Layout>
+          } />
+          <Route path="/websocket" element={
+            <Layout>
+              <WebSocketPage />
             </Layout>
           } />
         </Routes>
