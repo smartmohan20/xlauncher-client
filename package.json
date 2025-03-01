@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "dotenv": "^16.4.7",
+    "framer-motion": "^12.4.7",
+    "lucide-react": "^0.477.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-json-pretty": "^2.2.0",
