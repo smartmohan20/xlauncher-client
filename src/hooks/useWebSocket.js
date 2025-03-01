@@ -35,7 +35,11 @@ const useWebSocket = () => {
       const success = websocketService.connect(url || defaultUrl);
       
       if (success) {
-        addMessage({ type: 'system', data: { message: 'Connection established' } }, 'system');
+        addMessage({ type: 'system', data: { message: 'Connecting to server...' } }, 'system');
+        setStatus('CONNECTING');
+      } else {
+        setError('Failed to initialize WebSocket connection');
+        addMessage({ type: 'error', data: { message: 'Failed to initialize WebSocket connection' } }, 'system');
       }
       return success;
     } catch (err) {
@@ -51,6 +55,7 @@ const useWebSocket = () => {
       const success = websocketService.disconnect();
       if (success) {
         addMessage({ type: 'system', data: { message: 'Disconnected from server' } }, 'system');
+        setStatus('DISCONNECTED');
       }
       return success;
     } catch (err) {
@@ -63,7 +68,6 @@ const useWebSocket = () => {
   // Send message to WebSocket server
   const sendMessage = useCallback((message) => {
     try {
-      const stringMessage = typeof message === 'string' ? message : JSON.stringify(message);
       const success = websocketService.sendMessage(message);
       
       if (success) {
@@ -95,7 +99,10 @@ const useWebSocket = () => {
 
     const disconnectListener = websocketService.addEventListener('disconnect', (data) => {
       setStatus('DISCONNECTED');
-      addMessage({ type: 'system', data: { message: `Disconnected: ${data.reason}` } }, 'system');
+      addMessage({ 
+        type: 'system', 
+        data: { message: `Disconnected: ${data.reason} (Code: ${data.code})` } 
+      }, 'system');
     });
 
     const errorListener = websocketService.addEventListener('error', (data) => {
@@ -107,14 +114,23 @@ const useWebSocket = () => {
       addMessage(data, 'incoming');
     });
 
-    // Clean up listeners
+    // Regularly update connection status
+    const statusInterval = setInterval(() => {
+      const currentStatus = websocketService.getStatus();
+      if (currentStatus !== status) {
+        setStatus(currentStatus);
+      }
+    }, 1000);
+
+    // Clean up listeners and interval
     return () => {
       connectListener();
       disconnectListener();
       errorListener();
       messageListener();
+      clearInterval(statusInterval);
     };
-  }, [addMessage]);
+  }, [addMessage, status]);
 
   return {
     status,
