@@ -337,7 +337,12 @@ const WebSocketPage = () => {
             {messages.length === 0 ? (
               <p className="text-gray-500 text-xs italic">No messages yet</p>
             ) : (
-              messages.map((message) => (
+              // Sort messages in descending order by timestamp (newest first)
+              // Then map them to JSX elements
+              messages
+              .slice() // Create a copy to avoid mutating the original array
+              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)) // Sort by timestamp (newest first)
+              .map((message) => (
                 <div 
                   key={message.id} 
                   className={`px-2 py-1.5 border rounded-md ${getMessageClass(message.direction)}`}
@@ -345,7 +350,7 @@ const WebSocketPage = () => {
                   <div className="flex justify-between items-start mb-1">
                     <span className="text-xs font-medium">
                       {message.direction === 'incoming' ? 'Received' : 
-                       message.direction === 'outgoing' ? 'Sent' : 'System'}
+                      message.direction === 'outgoing' ? 'Sent' : 'System'}
                     </span>
                     <div className="flex items-center space-x-1">
                       {message.direction !== 'system' && (
