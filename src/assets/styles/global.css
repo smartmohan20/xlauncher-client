@@ -3,34 +3,37 @@
 @tailwind utilities;
 
 :root {
-  --foreground-color: #000000;
-  --background-color: #ffffff;
+  --bg-color: #ffffff;
+  --text-color: #000000;
 }
 
 body {
-  background-color: var(--background-color);
-  color: var(--foreground-color);
-  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-@layer components {
-  .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
-  }
-  
-  .btn-primary {
-    @apply btn bg-primary text-secondary hover:bg-gray-800;
-  }
-  
-  .btn-outline {
-    @apply btn border border-primary text-primary hover:bg-gray-100;
-  }
-  
-  .input-field {
-    @apply w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary;
-  }
-  
-  .card {
-    @apply bg-white p-6 rounded-lg shadow-md border border-gray-200;
-  }
+/* Custom utility classes */
+.app-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.btn {
+  @apply px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply bg-black text-white hover:bg-gray-800;
+}
+
+.btn-outline {
+  @apply border border-black text-black hover:bg-gray-100;
+}
+
+.input-field {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-black;
+}
+
+.card {
+  @apply bg-white border border-gray-200 rounded-lg shadow-sm p-4;
 }
