@@ -59,6 +59,7 @@
 - **WebSocket Library**: IXWebSocket
 - **Platform**: Windows
 - **Target Platforms**: Windows, Mac, Android, iOS
+- **Version Control**: Git
 
 ## Documentation 📚
 
