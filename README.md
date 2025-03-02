@@ -54,9 +54,8 @@
 
 ## Technical Stack 💻
 
-- **Backend Language**: C++
-- **Build System**: CMake
-- **WebSocket Library**: IXWebSocket
+- **Backend Language**: React.js
+- **WebSocket Library**: Socket.io
 - **Platform**: Windows
 - **Target Platforms**: Windows, Mac, Android, iOS
 - **Version Control**: Git
