@@ -8,6 +8,7 @@ import WebSocketPage from './pages/WebSocket/WebSocket';
 import AppLauncher from './pages/AppLauncher/AppLauncher';
 import LoadingPage from './pages/Loading/Loading';
 import Settings from './pages/Settings/Settings';
+import ScreenRemote from './pages/ScreenRemote/ScreenRemote';
 import { useApp } from './contexts/AppContext';
 
 /**
@@ -56,6 +57,9 @@ const App = () => {
             <Layout>
               <Settings />
             </Layout>
+          } />
+          <Route path="/remote" element={
+            <ScreenRemote />
           } />
         </Routes>
       </Router>
