@@ -19,6 +19,9 @@ const initializeSocket = (url) => {
 
   try {
     socket = new WebSocket(url);
+    
+    // Set binary type to blob for image data
+    socket.binaryType = 'blob';
 
     // Set up event listeners
     socket.onopen = () => {
@@ -38,6 +41,19 @@ const initializeSocket = (url) => {
 
     socket.onmessage = (event) => {
       try {
+        // Handle binary data (like screen captures)
+        if (event.data instanceof Blob) {
+          // Create a custom event to dispatch binary data
+          const binaryEvent = new CustomEvent('websocketBinaryMessage', { 
+            detail: event.data 
+          });
+          window.dispatchEvent(binaryEvent);
+          
+          // Also notify internal listeners
+          notifyListeners('binaryMessage', event.data);
+          return;
+        }
+        
         // Try to parse as JSON first
         const data = JSON.parse(event.data);
         notifyListeners('message', data);
@@ -106,6 +122,17 @@ const sendMessage = (message) => {
 };
 
 /**
+ * Send binary data to server
+ */
+const sendBinary = (data) => {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(data);
+    return true;
+  }
+  return false;
+};
+
+/**
  * Register event listener
  */
 const addEventListener = (event, callback) => {
@@ -157,6 +184,7 @@ export default {
   connect,
   disconnect,
   sendMessage,
+  sendBinary,
   addEventListener,
   getStatus,
 };
