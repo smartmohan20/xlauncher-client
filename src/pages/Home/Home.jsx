@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiExternalLink, FiMessageSquare, FiSettings } from 'react-icons/fi';
+import { FiExternalLink, FiMonitor, FiMessageSquare, FiSettings } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 
 /**
@@ -68,6 +68,23 @@ const Home = () => {
                 <Button className="flex items-center" variant="outline">
                   <FiExternalLink className="mr-2" />
                   Open Settings
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {/* Add new Remote Screen card */}
+          {!isWindows && (
+            <div className="card flex flex-col items-center p-6 md:col-span-2">
+              <FiMonitor className="text-3xl mb-4" />
+              <h2 className="text-xl font-medium mb-2">Remote Screen</h2>
+              <p className="text-gray-600 text-sm mb-4 text-center">
+                View and control your Windows desktop remotely from your mobile device
+              </p>
+              <Link to="/remote" className="mt-auto">
+                <Button className="flex items-center" variant="outline">
+                  <FiExternalLink className="mr-2" />
+                  Open Remote Screen
                 </Button>
               </Link>
             </div>
