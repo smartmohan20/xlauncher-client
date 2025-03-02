@@ -5,6 +5,7 @@ import useWebSocket from '../../hooks/useWebSocket';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import AppIcon from '../../components/AppIcon/AppIcon';
+import ConnectionStatus from '../../components/common/ConnectionStatus'; // Import the new component
 
 /**
  * Application launcher component
@@ -189,6 +190,9 @@ const AppLauncher = () => {
             </div>
           </div>
         )}
+        
+        {/* Display connection status even in loading state */}
+        <ConnectionStatus status={status} />
       </div>
     );
   }
@@ -218,6 +222,9 @@ const AppLauncher = () => {
             Quit
           </button>
         </div>
+        
+        {/* Display connection status in launch loading state */}
+        <ConnectionStatus status={status} />
       </div>
     );
   }
@@ -253,6 +260,9 @@ const AppLauncher = () => {
             Quit
           </button>
         </div>
+        
+        {/* Display connection status in launched app state */}
+        <ConnectionStatus status={status} />
       </div>
     );
   }
@@ -262,10 +272,7 @@ const AppLauncher = () => {
     <div className="min-h-screen bg-white p-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold">Application Launcher</h1>
-        <div className="flex items-center">
-          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${status === 'CONNECTED' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-          <span className="text-sm text-gray-600">{status === 'CONNECTED' ? 'Connected' : 'Disconnected'}</span>
-        </div>
+        {/* Remove the old status indicator from header */}
       </div>
       
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -333,6 +340,9 @@ const AppLauncher = () => {
           <FiLogOut size={24} />
         </button>
       </div>
+      
+      {/* Display the new connection status component */}
+      <ConnectionStatus status={status} />
     </div>
   );
 };
