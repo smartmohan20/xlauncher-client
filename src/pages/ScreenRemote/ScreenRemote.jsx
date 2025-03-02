@@ -55,7 +55,7 @@ const ScreenRemote = () => {
         disconnect();
       }
     };
-  }, []);
+  }, [connect, disconnect, sendMessage, status]);
 
   // Handle connection status changes
   useEffect(() => {
