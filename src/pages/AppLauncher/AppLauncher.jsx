@@ -172,7 +172,7 @@ const AppLauncher = () => {
             size="lg"
             className="mx-auto"
           />
-          <h2 className="text-lg font-medium mt-4 text-center">{launchedApp.name} is running</h2>
+          <h2 className="text-lg font-medium mt-4 text-center">{launchedApp.name} is running...</h2>
         </div>
         
         <button 
