@@ -7,6 +7,7 @@ import Home from './pages/Home/Home';
 import WebSocketPage from './pages/WebSocket/WebSocket';
 import AppLauncher from './pages/AppLauncher/AppLauncher';
 import LoadingPage from './pages/Loading/Loading';
+import Settings from './pages/Settings/Settings';
 import { useApp } from './contexts/AppContext';
 
 /**
@@ -50,6 +51,11 @@ const App = () => {
           } />
           <Route path="/launcher" element={
             <AppLauncher />
+          } />
+          <Route path="/settings" element={
+            <Layout>
+              <Settings />
+            </Layout>
           } />
         </Routes>
       </Router>
