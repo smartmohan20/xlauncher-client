@@ -19,7 +19,7 @@ const Home = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="card flex flex-col items-center p-6">
             <FiMessageSquare className="text-3xl mb-4" />
-            <h2 className="text-xl font-medium mb-2">WebSocket Client (Part 1)</h2>
+            <h2 className="text-xl font-medium mb-2">WebSocket Client</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">
               Connect to WebSocket servers and exchange messages in real-time
             </p>
@@ -31,15 +31,18 @@ const Home = () => {
             </Link>
           </div>
           
-          <div className="card flex flex-col items-center p-6 opacity-50">
+          <div className="card flex flex-col items-center p-6">
             <div className="text-3xl mb-4">🚀</div>
-            <h2 className="text-xl font-medium mb-2">Coming Soon (Part 2)</h2>
+            <h2 className="text-xl font-medium mb-2">App Launcher</h2>
             <p className="text-gray-600 text-sm mb-4 text-center">
-              More features will be available in future updates
+              Launch applications from the server through a mobile-friendly interface
             </p>
-            <Button className="flex items-center mt-auto" disabled>
-              Coming Soon
-            </Button>
+            <Link to="/launcher" className="mt-auto">
+              <Button className="flex items-center">
+                <FiExternalLink className="mr-2" />
+                Open App Launcher
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
