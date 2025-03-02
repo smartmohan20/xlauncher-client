@@ -98,7 +98,7 @@ const useWebSocket = () => {
       // Only allow sending if connected
       if (statusRef.current !== 'CONNECTED') {
         const errorMsg = 'Failed to send message: Not connected';
-        setError(errorMsg);
+        console.warn(errorMsg);
         addMessage({ type: 'error', data: { message: errorMsg } }, 'system');
         return false;
       }
