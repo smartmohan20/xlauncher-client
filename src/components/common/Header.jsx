@@ -11,6 +11,7 @@ const Header = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'WebSocket', path: '/websocket' },
+    { name: 'App Launcher', path: '/launcher' },
   ];
 
   return (
