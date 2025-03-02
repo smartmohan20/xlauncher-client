@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiHome, FiRefreshCw, FiWifi, FiXCircle, FiLogOut, FiSettings } from 'react-icons/fi';
+import { FiHome, FiRefreshCw, FiWifi, FiXCircle, FiLogOut, FiMonitor, FiSettings } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useWebSocket from '../../hooks/useWebSocket';
 import Loading from '../../components/common/Loading';
@@ -265,6 +265,15 @@ const AppLauncher = () => {
           >
             <FiHome className="mr-2" size={18} />
             Home
+          </button>
+          
+          {/* Add this new button */}
+          <button 
+            onClick={() => navigate('/remote')}
+            className="px-6 py-3 bg-blue-600 text-white rounded-full flex items-center justify-center"
+          >
+            <FiMonitor className="mr-2" size={18} />
+            Remote Screen
           </button>
           
           <button 
