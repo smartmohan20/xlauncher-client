@@ -31,6 +31,12 @@ const useWebSocket = () => {
   // Connect to WebSocket server
   const connect = useCallback((url) => {
     try {
+      if (status === 'CONNECTED' || status === 'CONNECTING') {
+        setError('Already connected or connecting');
+        addMessage({ type: 'error', data: { message: 'Already connected or connecting' } }, 'system');
+        return false;
+      }
+
       const defaultUrl = import.meta.env.VITE_WEBSOCKET_URL;
       const success = websocketService.connect(url || defaultUrl);
       
@@ -68,6 +74,8 @@ const useWebSocket = () => {
   // Send message to WebSocket server
   const sendMessage = useCallback((message) => {
     try {
+      console.error('sendMessage', message);
+
       const success = websocketService.sendMessage(message);
       
       if (success) {
