@@ -5,6 +5,7 @@ import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import Home from './pages/Home/Home';
 import WebSocketPage from './pages/WebSocket/WebSocket';
+import AppLauncher from './pages/AppLauncher/AppLauncher';
 import LoadingPage from './pages/Loading/Loading';
 import { useApp } from './contexts/AppContext';
 
@@ -46,6 +47,9 @@ const App = () => {
             <Layout>
               <WebSocketPage />
             </Layout>
+          } />
+          <Route path="/launcher" element={
+            <AppLauncher />
           } />
         </Routes>
       </Router>
