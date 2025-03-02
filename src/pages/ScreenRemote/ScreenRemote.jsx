@@ -27,6 +27,8 @@ const ScreenRemote = () => {
     quality: 70,
     fps: 15
   });
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [showCursor, setShowCursor] = useState(false);
   
   // WebSocket
   const { 
@@ -198,6 +200,7 @@ const ScreenRemote = () => {
     e.preventDefault();
   };
 
+  // Update the handleTouchMove function
   const handleTouchMove = (e) => {
     if (!isConnected) return;
     
@@ -207,6 +210,10 @@ const ScreenRemote = () => {
     // Calculate relative position
     const x = Math.round((touch.clientX - rect.left) / rect.width * screenInfo.width);
     const y = Math.round((touch.clientY - rect.top) / rect.height * screenInfo.height);
+    
+    // Update cursor position for visual feedback
+    setCursorPos({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+    setShowCursor(true);
     
     // Send mouse move event
     sendMessage({
@@ -222,6 +229,9 @@ const ScreenRemote = () => {
 
   const handleTouchEnd = (e) => {
     if (!isConnected) return;
+
+    // Hide the cursor when touch ends
+    setTimeout(() => setShowCursor(false), 1500);
     
     // We need to calculate the position even on touch end
     // Use the last position from the changedTouches array
@@ -383,6 +393,18 @@ const ScreenRemote = () => {
       <div className="absolute top-2 right-2">
         <ConnectionStatus status={status} />
       </div>
+
+      {showCursor && (
+        <div 
+          className="absolute w-6 h-6 pointer-events-none z-10"
+          style={{ 
+            left: `${cursorPos.x - 3}px`,  // Center the cursor image
+            top: `${cursorPos.y - 3}px`,
+            background: 'url(/cursor.png) no-repeat',
+            backgroundSize: 'contain'
+          }}
+        />
+      )}
     </div>
   );
 };

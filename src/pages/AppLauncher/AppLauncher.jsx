@@ -268,13 +268,14 @@ const AppLauncher = () => {
           </button>
           
           {/* Add this new button */}
-          <button 
-            onClick={() => navigate('/remote')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-full flex items-center justify-center"
-          >
-            <FiMonitor className="mr-2" size={18} />
-            Remote Screen
-          </button>
+          {!isWindows && (<button 
+              onClick={() => navigate('/remote')}
+              className="px-6 py-3 bg-blue-600 text-white rounded-full flex items-center justify-center"
+            >
+              <FiMonitor className="mr-2" size={18} />
+              Remote Screen
+            </button>
+          )}
           
           <button 
             onClick={handleQuit}
