@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiHome, FiRefreshCw, FiWifi, FiXCircle, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiRefreshCw, FiWifi, FiXCircle, FiLogOut, FiSettings } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useWebSocket from '../../hooks/useWebSocket';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import AppIcon from '../../components/AppIcon/AppIcon';
-import ConnectionStatus from '../../components/common/ConnectionStatus'; // Import the new component
+import ConnectionStatus from '../../components/common/ConnectionStatus';
 
 /**
  * Application launcher component
@@ -23,6 +23,7 @@ const AppLauncher = () => {
   const [launchLoading, setLaunchLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isWindows, setIsWindows] = useState(false);
 
   // Connect to WebSocket
   const { 
@@ -33,6 +34,15 @@ const AppLauncher = () => {
     messages, 
     error 
   } = useWebSocket();
+
+  // Check if we're on Windows platform
+  useEffect(() => {
+    // In a real app, you'd use a more reliable method to detect platform
+    // This is a simplified approach for demonstration
+    const userAgent = window.navigator.userAgent;
+    const isWindowsPlatform = userAgent.indexOf("Windows") > -1;
+    setIsWindows(isWindowsPlatform);
+  }, []);
 
   // Auto-connect on component load or route change
   useEffect(() => {
@@ -154,6 +164,11 @@ const AppLauncher = () => {
     navigate('/');
   }, [navigate, launchedApp, sendMessage]);
 
+  // Navigate to settings page
+  const goToSettings = useCallback(() => {
+    navigate('/settings');
+  }, [navigate]);
+
   // Reconnect to WebSocket
   const handleReconnect = useCallback(() => {
     const wsUrl = import.meta.env.VITE_WEBSOCKET_URL;
@@ -272,7 +287,16 @@ const AppLauncher = () => {
     <div className="min-h-screen bg-white p-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold">Application Launcher</h1>
-        {/* Remove the old status indicator from header */}
+        {/* Only show settings button on Windows */}
+        {isWindows && (
+          <button 
+            onClick={goToSettings}
+            className="px-3 py-2 bg-black text-white rounded-md flex items-center justify-center"
+          >
+            <FiSettings className="mr-2" />
+            Settings
+          </button>
+        )}
       </div>
       
       {error && <ErrorMessage message={error} className="mb-4" />}
@@ -333,6 +357,16 @@ const AppLauncher = () => {
           <FiHome size={24} />
         </button>
         
+        {/* Only show settings button on Windows */}
+        {isWindows && (
+          <button 
+            onClick={goToSettings}
+            className="w-16 h-16 bg-gray-800 text-white rounded-full flex items-center justify-center shadow-lg"
+          >
+            <FiSettings size={24} />
+          </button>
+        )}
+        
         <button 
           onClick={handleQuit}
           className="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg"
@@ -341,7 +375,7 @@ const AppLauncher = () => {
         </button>
       </div>
       
-      {/* Display the new connection status component */}
+      {/* Display the connection status component */}
       <ConnectionStatus status={status} />
     </div>
   );
