@@ -9,16 +9,16 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
   // Key mappings - simplified for common keys
   const standardKeys = [
     [
-      { label: '1', keyCode: 49 },
-      { label: '2', keyCode: 50 },
-      { label: '3', keyCode: 51 },
-      { label: '4', keyCode: 52 },
-      { label: '5', keyCode: 53 },
-      { label: '6', keyCode: 54 },
-      { label: '7', keyCode: 55 },
-      { label: '8', keyCode: 56 },
-      { label: '9', keyCode: 57 },
-      { label: '0', keyCode: 48 },
+      { label: '1', keyCode: 49, shiftLabel: '!' },
+      { label: '2', keyCode: 50, shiftLabel: '@' },
+      { label: '3', keyCode: 51, shiftLabel: '#' },
+      { label: '4', keyCode: 52, shiftLabel: '$' },
+      { label: '5', keyCode: 53, shiftLabel: '%' },
+      { label: '6', keyCode: 54, shiftLabel: '^' },
+      { label: '7', keyCode: 55, shiftLabel: '&' },
+      { label: '8', keyCode: 56, shiftLabel: '*' },
+      { label: '9', keyCode: 57, shiftLabel: '(' },
+      { label: '0', keyCode: 48, shiftLabel: ')' },
     ],
     [
       { label: 'q', keyCode: 81 },
@@ -57,10 +57,31 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
   
   // Special keys row
   const specialKeys = [
-    { label: 'Ctrl', keyCode: 17, isActive: isCtrl, toggle: () => setIsCtrl(!isCtrl), width: 'wide' },
-    { label: 'Alt', keyCode: 18, isActive: isAlt, toggle: () => setIsAlt(!isAlt), width: 'wide' },
+    { 
+      label: 'Ctrl', 
+      keyCode: 17, 
+      isActive: isCtrl, 
+      toggle: () => setIsCtrl(!isCtrl), 
+      width: 'wide',
+      isToggleKey: true 
+    },
+    { 
+      label: 'Alt', 
+      keyCode: 18, 
+      isActive: isAlt, 
+      toggle: () => setIsAlt(!isAlt), 
+      width: 'wide',
+      isToggleKey: true 
+    },
     { label: 'Space', keyCode: 32, width: 'extrawide' },
-    { label: 'Shift', keyCode: 16, isActive: isShift, toggle: () => setIsShift(!isShift), width: 'wide' },
+    { 
+      label: 'Shift', 
+      keyCode: 16, 
+      isActive: isShift, 
+      toggle: () => setIsShift(!isShift), 
+      width: 'wide',
+      isToggleKey: true 
+    },
     { label: <FiCornerUpLeft />, keyCode: 13, width: 'wide' },
   ];
   
@@ -85,15 +106,20 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
       keyCode: key.keyCode,
       shiftKey: isShift,
       ctrlKey: isCtrl,
-      altKey: isAlt
+      altKey: isAlt,
+      label: isShift && key.shiftLabel ? key.shiftLabel : key.label
     };
     
     // Send key press event
-    onKeyPress(keyData);
+    if (onKeyPress) {
+      onKeyPress(keyData);
+    }
     
     // Send key release event after a short delay (simulating a key press)
     setTimeout(() => {
-      onKeyRelease(keyData);
+      if (onKeyRelease) {
+        onKeyRelease(keyData);
+      }
       
       // Auto-reset shift after a keypress
       if (isShift && !key.isToggleKey) {
@@ -103,7 +129,7 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
   };
 
   return (
-    <div className="bg-gray-900 p-2 w-full">
+    <div className="bg-gray-900 p-2 w-full rounded-lg">
       {/* Standard keys */}
       {standardKeys.map((row, rowIndex) => (
         <div key={`row-${rowIndex}`} className="flex justify-center mb-1">
@@ -116,10 +142,13 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
                 h-10 flex items-center justify-center
                 ${isShift && key.label.length === 1 ? 'uppercase' : ''}
                 ${key.isActive ? 'bg-blue-700' : 'bg-gray-800'}
+                hover:bg-gray-700 active:bg-gray-600
+                transition-colors duration-200
               `}
               onTouchStart={() => handleKeyPress(key)}
+              onClick={() => handleKeyPress(key)}
             >
-              {key.label}
+              {isShift && key.shiftLabel ? key.shiftLabel : key.label}
             </button>
           ))}
         </div>
@@ -135,8 +164,11 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
               ${key.width === 'extrawide' ? 'flex-grow' : key.width === 'wide' ? 'w-12' : 'w-8'} 
               h-10
               ${key.isActive ? 'bg-blue-700' : 'bg-gray-800'}
+              hover:bg-gray-700 active:bg-gray-600
+              transition-colors duration-200
             `}
             onTouchStart={() => handleKeyPress(key)}
+            onClick={() => handleKeyPress(key)}
           >
             {key.label}
           </button>
@@ -148,8 +180,12 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
         {arrowKeys.map((key, index) => (
           <button
             key={`arrow-${index}`}
-            className="w-10 h-10 bg-gray-800 text-white rounded m-0.5 flex items-center justify-center"
+            className="w-10 h-10 bg-gray-800 text-white rounded m-0.5 
+              flex items-center justify-center
+              hover:bg-gray-700 active:bg-gray-600
+              transition-colors duration-200"
             onTouchStart={() => handleKeyPress(key)}
+            onClick={() => handleKeyPress(key)}
           >
             {key.label}
           </button>
@@ -157,6 +193,21 @@ const VirtualKeyboard = ({ onKeyPress, onKeyRelease }) => {
       </div>
     </div>
   );
+};
+
+// Import PropTypes
+import PropTypes from 'prop-types';
+
+// Add prop type validation
+VirtualKeyboard.propTypes = {
+  onKeyPress: PropTypes.func,
+  onKeyRelease: PropTypes.func
+};
+
+// Add default props
+VirtualKeyboard.defaultProps = {
+  onKeyPress: () => {},
+  onKeyRelease: () => {}
 };
 
 export default VirtualKeyboard;
