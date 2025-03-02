@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiHome, FiRefreshCw, FiWifi, FiXCircle } from 'react-icons/fi';
+import { FiHome, FiRefreshCw, FiWifi, FiXCircle, FiLogOut } from 'react-icons/fi';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useWebSocket from '../../hooks/useWebSocket';
 import Loading from '../../components/common/Loading';
 import ErrorMessage from '../../components/common/ErrorMessage';
@@ -10,12 +11,17 @@ import AppIcon from '../../components/AppIcon/AppIcon';
  * Displays application grid and handles app launching
  */
 const AppLauncher = () => {
+  // React Router hooks
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // State management
   const [apps, setApps] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [launchedApp, setLaunchedApp] = useState(null);
   const [launchLoading, setLaunchLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Connect to WebSocket
   const { 
@@ -27,20 +33,29 @@ const AppLauncher = () => {
     error 
   } = useWebSocket();
 
-  // Auto-connect on component load
+  // Auto-connect on component load or route change
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_WEBSOCKET_URL;
-    connect(wsUrl);
+    
+    // Only connect if not already connected
+    if (status !== 'CONNECTED') {
+      connect(wsUrl);
+    }
+    
+    setIsInitialized(true);
 
     // Cleanup on unmount
     return () => {
-      disconnect();
+      // Only disconnect if actually leaving the component
+      if (!location.pathname.includes('/launcher')) {
+        disconnect();
+      }
     };
-  }, [connect, disconnect]);
+  }, [connect, disconnect, status, location]);
 
   // Request app list when connected
   useEffect(() => {
-    if (status === 'CONNECTED') {
+    if (status === 'CONNECTED' && isInitialized) {
       requestAppList();
     }
     
@@ -49,7 +64,7 @@ const AppLauncher = () => {
     } else {
       setConnectionError(null);
     }
-  }, [status, sendMessage]);
+  }, [status, sendMessage, isInitialized]);
 
   // Process incoming messages
   useEffect(() => {
@@ -63,22 +78,26 @@ const AppLauncher = () => {
 
   // Process server messages
   const processServerMessage = useCallback((message) => {
-    const data = typeof message === 'string' ? JSON.parse(message) : message;
-    
-    // Handle app list response
-    if (data.type === 'app_list') {
-      setApps(data.apps || []);
-      setIsLoading(false);
-    }
-    
-    // Handle app launch response
-    if (data.type === 'launch_result') {
-      if (data.success) {
-        setLaunchLoading(false);
-      } else {
-        setLaunchLoading(false);
-        setLaunchedApp(null);
+    try {
+      const data = typeof message === 'string' ? JSON.parse(message) : message;
+      
+      // Handle app list response
+      if (data.type === 'app_list') {
+        setApps(data.apps || []);
+        setIsLoading(false);
       }
+      
+      // Handle app launch response
+      if (data.type === 'launch_result') {
+        if (data.success) {
+          setLaunchLoading(false);
+        } else {
+          setLaunchLoading(false);
+          setLaunchedApp(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing server message:', error);
     }
   }, []);
 
@@ -118,6 +137,28 @@ const AppLauncher = () => {
     }
   }, [launchedApp, sendMessage]);
 
+  // Quit to main app page
+  const handleQuit = useCallback(() => {
+    // Close any running app before quitting
+    if (launchedApp) {
+      sendMessage({
+        type: 'close_app',
+        data: {
+          id: launchedApp.id
+        }
+      });
+    }
+    
+    // Navigate to main app page
+    navigate('/');
+  }, [navigate, launchedApp, sendMessage]);
+
+  // Reconnect to WebSocket
+  const handleReconnect = useCallback(() => {
+    const wsUrl = import.meta.env.VITE_WEBSOCKET_URL;
+    connect(wsUrl);
+  }, [connect]);
+
   // Render loading state
   if (isLoading) {
     return (
@@ -129,13 +170,23 @@ const AppLauncher = () => {
         {connectionError && (
           <div className="mt-6">
             <ErrorMessage message={connectionError} />
-            <button 
-              onClick={() => connect(import.meta.env.VITE_WEBSOCKET_URL)}
-              className="mt-4 px-4 py-2 bg-black text-white rounded-md flex items-center justify-center"
-            >
-              <FiRefreshCw className="mr-2" />
-              Reconnect
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <button 
+                onClick={handleReconnect}
+                className="px-4 py-2 bg-black text-white rounded-md flex items-center justify-center"
+              >
+                <FiRefreshCw className="mr-2" />
+                Reconnect
+              </button>
+              
+              <button 
+                onClick={handleQuit}
+                className="px-4 py-2 bg-red-600 text-white rounded-md flex items-center justify-center"
+              >
+                <FiLogOut className="mr-2" />
+                Quit
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -150,13 +201,23 @@ const AppLauncher = () => {
         <h2 className="text-lg font-medium">Launching {launchedApp?.name}...</h2>
         <p className="text-sm text-gray-500 mt-2">This application is starting on the server</p>
         
-        <button 
-          onClick={goHome}
-          className="mt-8 px-4 py-2 bg-black text-white rounded-md flex items-center justify-center"
-        >
-          <FiXCircle className="mr-2" />
-          Cancel
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 mt-8">
+          <button 
+            onClick={goHome}
+            className="px-4 py-2 bg-black text-white rounded-md flex items-center justify-center"
+          >
+            <FiXCircle className="mr-2" />
+            Cancel
+          </button>
+          
+          <button 
+            onClick={handleQuit}
+            className="px-4 py-2 bg-red-600 text-white rounded-md flex items-center justify-center"
+          >
+            <FiLogOut className="mr-2" />
+            Quit
+          </button>
+        </div>
       </div>
     );
   }
@@ -175,13 +236,23 @@ const AppLauncher = () => {
           <h2 className="text-lg font-medium mt-4 text-center">{launchedApp.name} is running...</h2>
         </div>
         
-        <button 
-          onClick={goHome}
-          className="mt-4 px-6 py-3 bg-black text-white rounded-full flex items-center justify-center"
-        >
-          <FiHome className="mr-2" size={18} />
-          Home
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <button 
+            onClick={goHome}
+            className="px-6 py-3 bg-black text-white rounded-full flex items-center justify-center"
+          >
+            <FiHome className="mr-2" size={18} />
+            Home
+          </button>
+          
+          <button 
+            onClick={handleQuit}
+            className="px-6 py-3 bg-red-600 text-white rounded-full flex items-center justify-center"
+          >
+            <FiLogOut className="mr-2" size={18} />
+            Quit
+          </button>
+        </div>
       </div>
     );
   }
@@ -208,13 +279,23 @@ const AppLauncher = () => {
           <p className="text-gray-500 max-w-md mx-auto mb-6">
             The server didn't return any applications. Make sure the server is running and applications are properly configured.
           </p>
-          <button 
-            onClick={requestAppList}
-            className="px-4 py-2 bg-black text-white rounded-md flex items-center mx-auto"
-          >
-            <FiRefreshCw className="mr-2" />
-            Refresh
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              onClick={requestAppList}
+              className="px-4 py-2 bg-black text-white rounded-md flex items-center justify-center"
+            >
+              <FiRefreshCw className="mr-2" />
+              Refresh
+            </button>
+            
+            <button 
+              onClick={handleQuit}
+              className="px-4 py-2 bg-red-600 text-white rounded-md flex items-center justify-center"
+            >
+              <FiLogOut className="mr-2" />
+              Quit
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
@@ -237,12 +318,19 @@ const AppLauncher = () => {
         </div>
       )}
       
-      <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-center">
+      <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-center gap-4">
         <button 
           onClick={goHome}
           className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center shadow-lg"
         >
           <FiHome size={24} />
+        </button>
+        
+        <button 
+          onClick={handleQuit}
+          className="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg"
+        >
+          <FiLogOut size={24} />
         </button>
       </div>
     </div>
