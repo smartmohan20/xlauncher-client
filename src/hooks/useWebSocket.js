@@ -1,20 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import websocketService from '../services/websocket';
 
 /**
- * Custom hook for WebSocket functionality
+ * Custom hook for WebSocket functionality with improved connection handling
  */
 const useWebSocket = () => {
-  const [status, setStatus] = useState(websocketService.getStatus());
+  // Use refs to track the latest state without triggering rerenders
+  const statusRef = useRef(websocketService.getStatus());
+  const messagesRef = useRef([]);
+  
+  // State for component rendering
+  const [status, setStatus] = useState(statusRef.current);
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState(null);
 
-  // Update status handler
-  const handleStatusChange = useCallback((newStatus) => {
-    setStatus(newStatus);
-  }, []);
-
-  // Add message to history
+  // Add message to history - stable reference
   const addMessage = useCallback((message, direction) => {
     const timestamp = new Date().toISOString();
     const newMessage = {
@@ -24,44 +24,65 @@ const useWebSocket = () => {
       timestamp,
     };
     
-    setMessages(prev => [...prev, newMessage]);
+    // Update both ref and state to ensure consistency
+    messagesRef.current = [...messagesRef.current, newMessage];
+    setMessages(messagesRef.current);
     return newMessage;
+  }, []);
+
+  // Update status handler - stable reference
+  const handleStatusChange = useCallback((newStatus) => {
+    statusRef.current = newStatus;
+    setStatus(newStatus);
   }, []);
 
   // Connect to WebSocket server
   const connect = useCallback((url) => {
     try {
-      if (status === 'CONNECTED' || status === 'CONNECTING') {
-        setError('Already connected or connecting');
-        addMessage({ type: 'error', data: { message: 'Already connected or connecting' } }, 'system');
+      // Use the ref for current status to avoid closure issues
+      if (statusRef.current === 'CONNECTED' || statusRef.current === 'CONNECTING') {
+        const errorMsg = 'Already connected or connecting';
+        console.warn(errorMsg);
+        addMessage({ type: 'error', data: { message: errorMsg } }, 'system');
         return false;
       }
 
       const defaultUrl = import.meta.env.VITE_WEBSOCKET_URL;
+      handleStatusChange('CONNECTING'); // Set status first for immediate UI feedback
+      
       const success = websocketService.connect(url || defaultUrl);
       
       if (success) {
         addMessage({ type: 'system', data: { message: 'Connecting to server...' } }, 'system');
-        setStatus('CONNECTING');
       } else {
-        setError('Failed to initialize WebSocket connection');
-        addMessage({ type: 'error', data: { message: 'Failed to initialize WebSocket connection' } }, 'system');
+        const errorMsg = 'Failed to initialize WebSocket connection';
+        setError(errorMsg);
+        handleStatusChange('NOT_INITIALIZED');
+        addMessage({ type: 'error', data: { message: errorMsg } }, 'system');
       }
       return success;
     } catch (err) {
       setError(err.message);
+      handleStatusChange('NOT_INITIALIZED');
       addMessage({ type: 'error', data: { message: err.message } }, 'system');
       return false;
     }
-  }, [addMessage]);
+  }, [addMessage, handleStatusChange]);
 
   // Disconnect from WebSocket server
   const disconnect = useCallback(() => {
     try {
+      // Only attempt disconnect if we're actually connected or connecting
+      if (statusRef.current !== 'CONNECTED' && statusRef.current !== 'CONNECTING') {
+        return false;
+      }
+      
+      handleStatusChange('CLOSING'); // Update status before disconnecting
       const success = websocketService.disconnect();
+      
       if (success) {
         addMessage({ type: 'system', data: { message: 'Disconnected from server' } }, 'system');
-        setStatus('DISCONNECTED');
+        handleStatusChange('DISCONNECTED');
       }
       return success;
     } catch (err) {
@@ -69,20 +90,27 @@ const useWebSocket = () => {
       addMessage({ type: 'error', data: { message: err.message } }, 'system');
       return false;
     }
-  }, [addMessage]);
+  }, [addMessage, handleStatusChange]);
 
   // Send message to WebSocket server
   const sendMessage = useCallback((message) => {
     try {
-      console.error('sendMessage', message);
+      // Only allow sending if connected
+      if (statusRef.current !== 'CONNECTED') {
+        const errorMsg = 'Failed to send message: Not connected';
+        setError(errorMsg);
+        addMessage({ type: 'error', data: { message: errorMsg } }, 'system');
+        return false;
+      }
 
       const success = websocketService.sendMessage(message);
       
       if (success) {
         addMessage(message, 'outgoing');
       } else {
-        setError('Failed to send message: Not connected');
-        addMessage({ type: 'error', data: { message: 'Failed to send message: Not connected' } }, 'system');
+        const errorMsg = 'Failed to send message: Connection issue';
+        setError(errorMsg);
+        addMessage({ type: 'error', data: { message: errorMsg } }, 'system');
       }
       return success;
     } catch (err) {
@@ -94,39 +122,47 @@ const useWebSocket = () => {
 
   // Clear message history
   const clearMessages = useCallback(() => {
+    messagesRef.current = [];
     setMessages([]);
   }, []);
 
   // Set up event listeners
   useEffect(() => {
-    const connectListener = websocketService.addEventListener('connect', (data) => {
-      setStatus('CONNECTED');
+    // Event handlers with stable references
+    const onConnect = (data) => {
+      handleStatusChange('CONNECTED');
       setError(null);
       addMessage({ type: 'system', data: { message: `Connected with ID: ${data.id}` } }, 'system');
-    });
+    };
 
-    const disconnectListener = websocketService.addEventListener('disconnect', (data) => {
-      setStatus('DISCONNECTED');
+    const onDisconnect = (data) => {
+      handleStatusChange('DISCONNECTED');
       addMessage({ 
         type: 'system', 
         data: { message: `Disconnected: ${data.reason} (Code: ${data.code})` } 
       }, 'system');
-    });
+    };
 
-    const errorListener = websocketService.addEventListener('error', (data) => {
+    const onError = (data) => {
       setError(data.error);
       addMessage({ type: 'error', data: { message: data.error } }, 'system');
-    });
+    };
 
-    const messageListener = websocketService.addEventListener('message', (data) => {
+    const onMessage = (data) => {
       addMessage(data, 'incoming');
-    });
+    };
 
-    // Regularly update connection status
+    // Register event listeners
+    const connectListener = websocketService.addEventListener('connect', onConnect);
+    const disconnectListener = websocketService.addEventListener('disconnect', onDisconnect);
+    const errorListener = websocketService.addEventListener('error', onError);
+    const messageListener = websocketService.addEventListener('message', onMessage);
+
+    // Regularly update connection status from service
     const statusInterval = setInterval(() => {
       const currentStatus = websocketService.getStatus();
-      if (currentStatus !== status) {
-        setStatus(currentStatus);
+      if (currentStatus !== statusRef.current) {
+        handleStatusChange(currentStatus);
       }
     }, 1000);
 
@@ -138,7 +174,7 @@ const useWebSocket = () => {
       messageListener();
       clearInterval(statusInterval);
     };
-  }, [addMessage, status]);
+  }, [addMessage, handleStatusChange]);
 
   return {
     status,
