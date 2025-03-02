@@ -15,7 +15,7 @@ const WebSocketPage = () => {
     type: 'launch_app',
     data: {
       path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      arguments: ['google.com']
+      arguments: ['--profile-last-used', 'google.com']
     }
   }, null, 2));
   const [inputType, setInputType] = useState('json'); // 'text' or 'json'
@@ -91,7 +91,7 @@ const WebSocketPage = () => {
       type: 'launch_app',
       data: {
         path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        arguments: ['google.com']
+        arguments: ['--profile-last-used', 'google.com']
       }
     }, null, 2));
     setJsonError('');
