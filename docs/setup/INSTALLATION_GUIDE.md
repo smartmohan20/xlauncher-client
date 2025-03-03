@@ -1,6 +1,6 @@
 ## **React Vite Application Installation Guide**
 
-This guide will help you set up and run the Learnify React Vite application on your local machine.
+This guide will help you set up and run the Xlauncher Client React Vite application on your local machine.
 
 ### Step 1: Prerequisites
 
@@ -21,8 +21,8 @@ git --version
 Clone the project repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/learnify-fd.git
-cd learnify-fd
+git clone https://github.com/yourusername/xlauncher-client.git
+cd xlauncher-client
 ```
 
 ### Step 3: Install Dependencies
