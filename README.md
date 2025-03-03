@@ -54,7 +54,7 @@
 
 ## Technical Stack 💻
 
-- **Backend Language**: React.js
+- **Frontend Language**: React.js
 - **WebSocket Library**: Socket.io
 - **Platform**: Windows
 - **Target Platforms**: Windows, Mac, Android, iOS
