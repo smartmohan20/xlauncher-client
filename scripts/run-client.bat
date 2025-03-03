@@ -55,7 +55,7 @@ if /i "!command!"=="preview" goto :preview
 if /i "!command!"=="lint" goto :lint
 if /i "!command!"=="test" goto :test
 if /i "!command!"=="clean" goto :clean
-if /i "!command!"=="env" goto :setup_env
+if /i "!command!"=="env" goto :show_help
 
 echo Unknown command: !command!
 goto :show_help
@@ -65,14 +65,13 @@ echo.
 echo Usage: run-vite.bat [command] [environment]
 echo.
 echo Available commands:
-echo   setup    - Install dependencies and set up environment file
+echo   setup    - Install dependencies only (no env file generation)
 echo   dev      - Run development server
 echo   build    - Build for production
 echo   preview  - Preview production build
 echo   lint     - Run linter
 echo   test     - Run tests
 echo   clean    - Clean up build artifacts and node_modules
-echo   env      - Set up environment files
 echo   help     - Show this help message
 echo.
 echo Available environments:
@@ -88,80 +87,7 @@ echo === Setting up the project ===
 echo.
 echo Installing dependencies...
 call npm install
-
-echo.
-echo Setting up environment...
-goto :setup_env
-
-:setup_env
-echo.
-echo === Setting up environment files ===
-echo.
-
-if not exist .env (
-    echo Creating .env file...
-    (
-        echo # Application Configuration
-        echo VITE_APP_ENV="!env!"
-        echo VITE_APP_NAME="XLauncher Client"
-        echo VITE_API_BASE_URL="http://localhost:2354"
-        echo VITE_WEBSOCKET_URL="ws://localhost:2354"
-    ) > .env
-    echo .env file created.
-) else (
-    echo .env file already exists.
-)
-
-if /i "!env!"=="development" (
-    if not exist .env.development (
-        echo Creating .env.development file...
-        (
-            echo # Development Environment Configuration
-            echo VITE_APP_ENV="development"
-            echo VITE_APP_NAME="XLauncher Client - DEV"
-            echo VITE_API_BASE_URL="http://localhost:2354"
-            echo VITE_WEBSOCKET_URL="ws://localhost:2354"
-        ) > .env.development
-        echo .env.development file created.
-    ) else (
-        echo .env.development file already exists.
-    )
-)
-
-if /i "!env!"=="staging" (
-    if not exist .env.staging (
-        echo Creating .env.staging file...
-        (
-            echo # Staging Environment Configuration
-            echo VITE_APP_ENV="staging"
-            echo VITE_APP_NAME="XLauncher Client - STAGING"
-            echo VITE_API_BASE_URL="https://staging-api.example.com"
-            echo VITE_WEBSOCKET_URL="wss://staging-api.example.com"
-        ) > .env.staging
-        echo .env.staging file created.
-    ) else (
-        echo .env.staging file already exists.
-    )
-)
-
-if /i "!env!"=="production" (
-    if not exist .env.production (
-        echo Creating .env.production file...
-        (
-            echo # Production Environment Configuration
-            echo VITE_APP_ENV="production"
-            echo VITE_APP_NAME="XLauncher Client"
-            echo VITE_API_BASE_URL="https://api.example.com"
-            echo VITE_WEBSOCKET_URL="wss://api.example.com"
-        ) > .env.production
-        echo .env.production file created.
-    ) else (
-        echo .env.production file already exists.
-    )
-)
-
-echo Environment setup complete for !env!.
-if /i "!command!"=="env" exit /b 0
+echo Setup completed.
 exit /b 0
 
 :dev
