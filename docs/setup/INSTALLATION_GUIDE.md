@@ -58,7 +58,7 @@ The application comes with several predefined scripts:
 #### Development Mode
 Run the application in development mode with hot-reload:
 ```bash
-npm run dev
+npm run dev -- --host
 ```
 
 #### Build
