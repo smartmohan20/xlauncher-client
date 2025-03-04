@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiHome, FiTrash2, FiPlus, FiSave, FiUpload, FiDownload, FiRefreshCw, FiLogOut } from 'react-icons/fi';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useWebSocket from '../../hooks/useWebSocket';
@@ -17,6 +17,11 @@ const Settings = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // File input refs
+  const appSelectRef = useRef(null);
+  const configLoadRef = useRef(null);
+  const configSaveRef = useRef(null);
+  
   // State management
   const [apps, setApps] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -174,32 +179,42 @@ const Settings = () => {
 
   // Add a new application
   const handleAddApp = useCallback(() => {
-    // In a browser environment, we can't directly access the filesystem,
-    // so we'll use a custom dialog approach via the WebSocket server
+    // Trigger file selection dialog directly
+    if (appSelectRef.current) {
+      appSelectRef.current.click();
+    }
+  }, []);
+
+  // Handle selected app file
+  const handleAppFileSelect = useCallback((event) => {
+    if (!event.target.files.length) return;
     
-    // First, prompt the user for application details
-    const appName = prompt("Enter application name:");
-    if (!appName) return; // User cancelled
+    const file = event.target.files[0];
+    const fileName = file.name;
     
-    const appPath = prompt("Enter application path (e.g., C:\\Windows\\System32\\notepad.exe):");
-    if (!appPath) return; // User cancelled
-    
-    const appArgs = prompt("Enter application arguments (comma separated):", "");
-    const appArgArray = appArgs ? appArgs.split(',').map(arg => arg.trim()) : [];
+    // Extract app name from filename (remove extension)
+    const appName = fileName.replace(/\.[^/.]+$/, "");
     
     // Generate a simple ID from the app name
     const appId = appName.toLowerCase().replace(/[^a-z0-9]/g, '_');
     
-    // Send the add app request
+    // Ask for optional arguments
+    const appArgs = prompt("Enter application arguments (comma separated):", "");
+    const appArgArray = appArgs ? appArgs.split(',').map(arg => arg.trim()) : [];
+    
+    // Send the add app request with filename and arguments
     sendMessage({
       type: 'add_app',
       data: {
         id: appId,
         name: appName,
-        path: appPath,
+        fileName: fileName,
         arguments: appArgArray
       }
     });
+    
+    // Reset the file input
+    event.target.value = '';
   }, [sendMessage]);
 
   // Remove an application
@@ -214,41 +229,55 @@ const Settings = () => {
     }
   }, [sendMessage]);
 
-  // Save configuration
+  // Save configuration - trigger file dialog
   const handleSaveConfig = useCallback(() => {
-    const customPath = prompt("Enter path to save config (or leave blank for default):", configPath);
-    
-    if (customPath !== null) { // User didn't cancel
-      sendMessage({
-        type: 'save_config',
-        data: {
-          path: customPath || configPath
-        }
-      });
-      
-      if (customPath) {
-        setConfigPath(customPath);
-      }
+    if (configSaveRef.current) {
+      configSaveRef.current.click();
     }
-  }, [sendMessage, configPath]);
+  }, []);
 
-  // Load configuration
-  const handleLoadConfig = useCallback(() => {
-    const customPath = prompt("Enter path to load config from:", configPath);
+  // Handle save config file selection
+  const handleSaveConfigFile = useCallback((event) => {
+    if (!event.target.files.length) return;
     
-    if (customPath !== null) { // User didn't cancel
-      sendMessage({
-        type: 'load_config',
-        data: {
-          path: customPath || configPath
-        }
-      });
-      
-      if (customPath) {
-        setConfigPath(customPath);
+    const file = event.target.files[0];
+    const fileName = file.name;
+    
+    sendMessage({
+      type: 'save_config',
+      data: {
+        fileName: fileName
       }
+    });
+    
+    // Reset the file input
+    event.target.value = '';
+  }, [sendMessage]);
+
+  // Load configuration - trigger file dialog
+  const handleLoadConfig = useCallback(() => {
+    if (configLoadRef.current) {
+      configLoadRef.current.click();
     }
-  }, [sendMessage, configPath]);
+  }, []);
+
+  // Handle load config file selection
+  const handleLoadConfigFile = useCallback((event) => {
+    if (!event.target.files.length) return;
+    
+    const file = event.target.files[0];
+    const fileName = file.name;
+    
+    sendMessage({
+      type: 'load_config',
+      data: {
+        fileName: fileName
+      }
+    });
+    
+    // Reset the file input
+    event.target.value = '';
+  }, [sendMessage]);
 
   // Handle file selection for config upload
   const handleFileChange = (event) => {
@@ -271,7 +300,8 @@ const Settings = () => {
       sendMessage({
         type: 'upload_config',
         data: {
-          content: content
+          content: content,
+          fileName: selectedFile.name
         }
       });
       
@@ -302,20 +332,20 @@ const Settings = () => {
   // Render loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
         <Loading size="xl" className="mb-4" />
         <h2 className="text-lg font-medium">Loading settings...</h2>
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="mt-2 text-sm text-gray-500">
           {status === 'CONNECTED' ? 'Retrieving application list...' : 'Connecting to server...'}
         </p>
         
         {connectionError && (
           <div className="mt-6">
             <ErrorMessage message={connectionError} />
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="flex flex-col gap-4 mt-4 sm:flex-row">
               <button 
                 onClick={handleReconnect}
-                className="px-4 py-2 bg-black text-white rounded-md flex items-center justify-center"
+                className="flex items-center justify-center px-4 py-2 text-white bg-black rounded-md"
               >
                 <FiRefreshCw className="mr-2" />
                 Reconnect
@@ -323,7 +353,7 @@ const Settings = () => {
               
               <button 
                 onClick={handleQuit}
-                className="px-4 py-2 bg-red-600 text-white rounded-md flex items-center justify-center"
+                className="flex items-center justify-center px-4 py-2 text-white bg-red-600 rounded-md"
               >
                 <FiLogOut className="mr-2" />
                 Quit
@@ -340,7 +370,7 @@ const Settings = () => {
   // Render platform error
   if (platformError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
         <ErrorMessage message={platformError} />
         <Button onClick={goToLauncher} className="mt-4">
           Back to Launcher
@@ -351,7 +381,30 @@ const Settings = () => {
 
   // Main settings view
   return (
-    <div className="min-h-screen bg-white p-4">
+    <div className="min-h-screen p-4 bg-white">
+      {/* Hidden file inputs */}
+      <input 
+        type="file" 
+        ref={appSelectRef}
+        onChange={handleAppFileSelect}
+        style={{ display: 'none' }}
+        accept=".exe,.bat,.cmd,.ps1"
+      />
+      <input 
+        type="file" 
+        ref={configLoadRef}
+        onChange={handleLoadConfigFile}
+        style={{ display: 'none' }}
+        accept=".json"
+      />
+      <input 
+        type="file" 
+        ref={configSaveRef}
+        onChange={handleSaveConfigFile}
+        style={{ display: 'none' }}
+        accept=".json"
+      />
+      
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">Application Settings</h1>
@@ -365,8 +418,8 @@ const Settings = () => {
         
         {/* Connection status indicator */}
         {status !== 'CONNECTED' && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-            <p className="text-yellow-700 text-sm flex items-center justify-between">
+          <div className="p-3 mb-4 border border-yellow-200 rounded-md bg-yellow-50">
+            <p className="flex items-center justify-between text-sm text-yellow-700">
               <span>Connection Status: {status}</span>
               <Button 
                 onClick={handleReconnect}
@@ -381,15 +434,15 @@ const Settings = () => {
         )}
         
         {/* Config Actions */}
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="card p-4 flex flex-col">
-            <h3 className="text-md font-medium mb-3">Save Configuration</h3>
-            <p className="text-sm text-gray-600 mb-3">
+        <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-3">
+          <div className="flex flex-col p-4 card">
+            <h3 className="mb-3 font-medium text-md">Save Configuration</h3>
+            <p className="mb-3 text-sm text-gray-600">
               Save current application list to a configuration file
             </p>
             <Button 
               onClick={handleSaveConfig} 
-              className="mt-auto flex items-center justify-center"
+              className="flex items-center justify-center mt-auto"
               disabled={status !== 'CONNECTED'}
             >
               <FiSave className="mr-2" />
@@ -397,14 +450,14 @@ const Settings = () => {
             </Button>
           </div>
           
-          <div className="card p-4 flex flex-col">
-            <h3 className="text-md font-medium mb-3">Load Configuration</h3>
-            <p className="text-sm text-gray-600 mb-3">
+          <div className="flex flex-col p-4 card">
+            <h3 className="mb-3 font-medium text-md">Load Configuration</h3>
+            <p className="mb-3 text-sm text-gray-600">
               Load application list from a configuration file
             </p>
             <Button 
               onClick={handleLoadConfig} 
-              className="mt-auto flex items-center justify-center"
+              className="flex items-center justify-center mt-auto"
               disabled={status !== 'CONNECTED'}
             >
               <FiDownload className="mr-2" />
@@ -412,12 +465,12 @@ const Settings = () => {
             </Button>
           </div>
           
-          <div className="card p-4 flex flex-col">
-            <h3 className="text-md font-medium mb-3">Upload Configuration</h3>
-            <p className="text-sm text-gray-600 mb-3">
+          <div className="flex flex-col p-4 card">
+            <h3 className="mb-3 font-medium text-md">Upload Configuration</h3>
+            <p className="mb-3 text-sm text-gray-600">
               Upload a JSON configuration file
             </p>
-            <div className="flex flex-col space-y-2 mt-auto">
+            <div className="flex flex-col mt-auto space-y-2">
               <div className="flex items-center">
                 <input
                   type="file"
@@ -440,7 +493,7 @@ const Settings = () => {
         </div>
         
         {/* Applications List */}
-        <div className="mb-4 flex justify-between items-center">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium">Registered Applications</h2>
           <div className="flex gap-2">
             <Button 
@@ -466,9 +519,9 @@ const Settings = () => {
         </div>
         
         {apps.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
-            <h3 className="text-lg font-medium mb-2">No applications registered</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
+          <div className="py-12 text-center border-2 border-gray-200 border-dashed rounded-lg">
+            <h3 className="mb-2 text-lg font-medium">No applications registered</h3>
+            <p className="max-w-md mx-auto mb-6 text-gray-500">
               Add applications to your launcher to get started.
             </p>
             <Button 
@@ -481,24 +534,24 @@ const Settings = () => {
             </Button>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-hidden bg-white border border-gray-200 rounded-lg">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    <th scope="col" className="w-1/4 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Application
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                    <th scope="col" className="w-2/5 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Path
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                    <th scope="col" className="w-1/6 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       ID
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                    <th scope="col" className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Type
                     </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                    <th scope="col" className="w-1/12 px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
                       Actions
                     </th>
                   </tr>
@@ -508,7 +561,7 @@ const Settings = () => {
                     <tr key={app.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
+                          <div className="flex-shrink-0 w-10 h-10">
                             <AppIcon 
                               icon={app.icon}
                               name={app.name}
@@ -521,13 +574,13 @@ const Settings = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500 truncate max-w-xs">{app.path}</div>
+                        <div className="max-w-xs text-sm text-gray-500 truncate">{app.path}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-500">{app.id}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium bg-gray-100 rounded-full text-gray-800">
+                        <span className="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full">
                           {app.type || "EXECUTABLE"}
                         </span>
                       </td>
@@ -536,7 +589,7 @@ const Settings = () => {
                           onClick={() => handleRemoveApp(app.id)}
                           variant="ghost" 
                           size="xs"
-                          className="text-red-600 hover:text-red-900 flex items-center ml-auto"
+                          className="flex items-center ml-auto text-red-600 hover:text-red-900"
                           disabled={status !== 'CONNECTED'}
                         >
                           <FiTrash2 className="mr-1" />
@@ -552,17 +605,17 @@ const Settings = () => {
         )}
       </div>
       
-      <div className="fixed bottom-0 left-0 right-0 p-4 flex justify-center gap-4">
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center gap-4 p-4">
         <button 
           onClick={goToLauncher}
-          className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center shadow-lg"
+          className="flex items-center justify-center w-16 h-16 text-white bg-black rounded-full shadow-lg"
         >
           <FiHome size={24} />
         </button>
         
         <button 
           onClick={handleQuit}
-          className="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg"
+          className="flex items-center justify-center w-16 h-16 text-white bg-red-600 rounded-full shadow-lg"
         >
           <FiLogOut size={24} />
         </button>
